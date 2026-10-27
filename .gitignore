@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 打包产物（EXE 请从 Release 下载，勿提交入库）
+*.exe
+*.spec
+build/
+dist/
+
+# 运行输出
+output/
+
+# 本地配置（填入真实凭证后请勿提交）
+程序/config.local.json
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini

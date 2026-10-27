@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --pdd: #e02e24;
+    --pdd-dark: #c01e16;
+    --bg: #fff;
+    --text: #1f2329;
+    --muted: #8a919f;
+    --line: #e6e8ee;
+    --ok: #07c160;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 340px; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); padding: 18px 16px;
+  }
+  .head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, #ff5f52, #e02e24); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 700;
+  }
+  .head .t { font-size: 15px; font-weight: 700; }
+  .head .s { font-size: 11px; color: var(--muted); }
+
+  .status {
+    display: flex; align-items: center; gap: 8px;
+    margin: 12px 0; padding: 10px 12px; border-radius: 10px;
+    background: #f7f8fa; font-size: 13px;
+  }
+  .status .dot { width: 9px; height: 9px; border-radius: 50%; background: #c6cad1; }
+  .status.on .dot { background: var(--ok); box-shadow: 0 0 0 3px rgba(7,193,96,.15); }
+  .status.on { background: #f0faf4; color: #067647; }
+
+  .btn {
+    width: 100%; height: 42px; border: none; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: .15s;
+  }
+  .btn.primary { background: linear-gradient(135deg, #ff5f52, #e02e24); color: #fff; }
+  .btn.primary:hover { background: linear-gradient(135deg, #e0493e, #c01e16); }
+  .btn.ghost { background: #fff; color: var(--pdd); border: 1.5px solid var(--pdd); margin-top: 10px; }
+  .btn.ghost:hover { background: #fdf2f1; }
+
+  .cred { margin-top: 14px; }
+  .cred .row { margin-bottom: 10px; }
+  .cred label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  .cred .box {
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--line); border-radius: 9px; padding: 8px 10px;
+    background: #fafbfc;
+  }
+  .cred .box .val {
+    flex: 1; min-width: 0; font-size: 12px; font-family: Consolas, monospace;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cred .box .val.empty { color: #c0c4cc; font-family: inherit; }
+  .cred .copy {
+    flex-shrink: 0; border: none; background: #eef0f4; color: var(--text);
+    border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+  }
+  .cred .copy:hover { background: #e2e5ea; }
+  .cred .copy.done { background: var(--ok); color: #fff; }
+
+  .hint { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.7; }
+  .hint b { color: var(--pdd); }
+
+  .manual { margin-top: 12px; }
+  .manual .toggle {
+    font-size: 12px; color: var(--muted); cursor: pointer; user-select: none;
+  }
+  .manual .toggle:hover { color: var(--pdd); }
+  .manual textarea {
+    width: 100%; height: 56px; margin-top: 8px; border: 1.5px solid var(--line);
+    border-radius: 9px; padding: 8px; font-size: 12px; font-family: Consolas, monospace;
+    resize: vertical; outline: none; background: #fafbfc;
+  }
+  .manual textarea:focus { border-color: var(--pdd); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="logo">多</div>
+    <div>
+      <div class="t">拼多多登录助手</div>
+      <div class="s">自动提取凭证，供订单导出使用</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">
+    <span class="dot"></span>
+    <span id="statusText">尚未登录</span>
+  </div>
+
+  <button class="btn primary" id="btnLogin">打开拼多多登录页</button>
+  <button class="btn ghost" id="btnRefresh">刷新凭证</button>
+
+  <div class="cred">
+    <div class="row">
+      <label>多多号 / 用户 ID（pdd_user_id）</label>
+      <div class="box">
+        <span class="val empty" id="uidVal">—</span>
+        <button class="copy" data-target="uid">复制</button>
+      </div>
+    </div>
+    <div class="row">
+      <label>登录凭证（PDDAccessToken）</label>
+      <div class="box">
+        <span class="val empty" id="tokenVal">—</span>
+        <button class="copy" data-target="token">复制</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="manual">
+    <span class="toggle" id="manualToggle">▸ 手动粘贴凭证（备用）</span>
+    <textarea id="manualInput" class="hidden" placeholder='粘贴格式：{"uid":"多多号","token":"PDDAccessToken"}'></textarea>
+    <button class="btn ghost hidden" id="btnManualSave">保存手动凭证</button>
+  </div>
+
+  <div class="hint">
+    复制到剪贴板后，打开订单导出工具，粘贴对应字段即可。<br>
+    凭证相当于你的登录密码，<b>请勿泄露给他人</b>。
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拼多多买家订单导出</title>
+<style>
+  :root {
+    --pdd: #e02e24;
+    --pdd-dark: #c01e16;
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --text: #1f2329;
+    --muted: #8a919f;
+    --line: #e6e8ee;
+    --ok: #07c160;
+    --err: #fa5151;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #fdf2f1 0%, #f6f7fb 45%, #eef3ff 100%);
+    min-height: 100vh;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px;
+  }
+  .brand { text-align: center; margin-bottom: 28px; }
+  .brand .logo {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: linear-gradient(135deg, #ff5f52, #e02e24);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 30px; font-weight: 700;
+    box-shadow: 0 10px 24px rgba(224,46,36,.28);
+  }
+  .brand h1 { font-size: 22px; margin-top: 14px; letter-spacing: .5px; }
+  .brand p { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  .card {
+    background: var(--card); border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(31,35,41,.08);
+    width: 100%; max-width: 460px; padding: 34px 32px;
+    border: 1px solid rgba(255,255,255,.7);
+  }
+  .card h2 { font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pdd); }
+  .sub { color: var(--muted); font-size: 13px; margin: 8px 0 22px; }
+
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 13px; color: #3a4150; margin-bottom: 8px; font-weight: 600; }
+  .field label em { color: var(--pdd); font-style: normal; }
+  .field input, .field select {
+    width: 100%; height: 46px; border: 1.5px solid var(--line);
+    border-radius: 12px; padding: 0 14px; font-size: 14px; color: var(--text);
+    background: #fafbfc; transition: .15s; outline: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--pdd); background: #fff;
+    box-shadow: 0 0 0 3px rgba(224,46,36,.10);
+  }
+  .field .hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .field .hint a { color: var(--pdd); text-decoration: none; cursor: pointer; }
+
+  .btn {
+    width: 100%; height: 48px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #ff5f52, #e02e24); color: #fff;
+    font-size: 16px; font-weight: 600; letter-spacing: 2px; cursor: pointer;
+    transition: .15s;
+  }
+  .btn:hover { background: linear-gradient(135deg, #e0493e, #c01e16); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn.ghost {
+    background: #fff; color: var(--pdd); border: 1.5px solid var(--pdd);
+    letter-spacing: 0;
+  }
+  .btn.ghost:hover { background: #fdf2f1; }
+
+  .msg { font-size: 13px; margin-top: 14px; min-height: 20px; line-height: 20px; }
+  .msg.ok { color: var(--ok); }
+  .msg.err { color: var(--err); }
+
+  /* 登录成功后 */
+  .hidden { display: none !important; }
+  .user-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: #fdf2f1; border: 1px solid #fbe0dd; border-radius: 14px;
+    padding: 12px 16px; margin-bottom: 20px;
+  }
+  .user-bar .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg,#ff5f52,#e02e24); color:#fff;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;
+  }
+  .user-bar .info { flex: 1; min-width: 0; }
+  .user-bar .name { font-weight: 700; font-size: 15px; }
+  .user-bar .uid { color: var(--muted); font-size: 12px; }
+  .user-bar .logout { color: var(--muted); cursor: pointer; font-size: 12px; }
+  .user-bar .logout:hover { color: var(--pdd); }
+
+  .row2 { display: flex; gap: 12px; }
+  .row2 .field { flex: 1; }
+
+  /* 进度条 */
+  .progress-wrap { margin: 20px 0 6px; }
+  .progress-track { height: 10px; background: #eef0f4; border-radius: 999px; overflow: hidden; }
+  .progress-bar {
+    height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, #ff5f52, #e02e24);
+    transition: width .4s ease;
+  }
+  .progress-text { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .result { margin-top: 16px; }
+  .result .file {
+    display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    background: #f7f8fa; border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 14px; font-size: 13px;
+  }
+  .result .file .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .result .actions { display: flex; gap: 10px; margin-top: 14px; }
+  .result .actions .btn { height: 42px; font-size: 14px; }
+
+  /* 帮助弹窗 */
+  .modal {
+    position: fixed; inset: 0; background: rgba(20,22,26,.45);
+    display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal .box {
+    background: #fff; border-radius: 18px; max-width: 520px; width: 100%;
+    padding: 26px 28px; max-height: 80vh; overflow: auto;
+  }
+  .modal .box h3 { font-size: 16px; margin-bottom: 14px; }
+  .modal ol { padding-left: 20px; font-size: 13px; line-height: 1.9; color: #3a4150; }
+  .modal code { background: #f3f4f7; padding: 2px 6px; border-radius: 5px; font-size: 12px; color: var(--pdd); }
+  .modal .close { margin-top: 18px; }
+  .spin {
+    display: inline-block; width: 16px; height: 16px; vertical-align: -2px;
+    border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
+    animation: spin .7s linear infinite; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <div class="logo">多</div>
+    <h1>拼多多买家订单导出</h1>
+    <p>输入账号凭证，一键导出订单为 Excel / CSV</p>
+  </div>
+
+  <!-- 登录卡片 -->
+  <div class="card" id="loginCard">
+    <h2><span class="dot"></span>登录</h2>
+    <div class="sub">请填写拼多多账号凭证（本工具不会上传你的凭证）</div>
+
+    <div class="field">
+      <label>多多号 / 用户 ID <em>*</em></label>
+      <input id="pdduid" placeholder="登录后 Cookie 中的 pdd_user_id" autocomplete="off">
+      <div class="hint"><a onclick="showHelp()">不知道在哪找？点我查看教程</a></div>
+    </div>
+
+    <div class="field">
+      <label>登录凭证（PDDAccessToken）<em>*</em></label>
+      <input id="token" placeholder="粘贴 PDDAccessToken" autocomplete="off">
+      <div class="hint">登录 <code>mobile.yangkeduo.com</code> 后可在 Cookie 中获取</div>
+    </div>
+
+    <button class="btn" id="loginBtn" onclick="doLogin()">登 录</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <!-- 导出面板 -->
+  <div class="card hidden" id="exportCard">
+    <div class="user-bar">
+      <div class="avatar" id="avatar">多</div>
+      <div class="info">
+        <div class="name" id="nickname">已登录</div>
+        <div class="uid" id="uidText"></div>
+      </div>
+      <div class="logout" onclick="logout()">退出</div>
+    </div>
+
+    <div class="field">
+      <label>订单类型</label>
+      <select id="orderType">
+        <option value="all">全部订单</option>
+        <option value="1">待付款</option>
+        <option value="2">待发货</option>
+        <option value="3">待收货</option>
+        <option value="4">待评价</option>
+        <option value="5">待分享</option>
+      </select>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>开始日期（可选）</label>
+        <input id="timeFrom" type="date">
+      </div>
+      <div class="field">
+        <label>结束日期（可选）</label>
+        <input id="timeTo" type="date">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>输出格式</label>
+      <select id="outFormat">
+        <option value="xlsx">Excel（.xlsx）</option>
+        <option value="csv">CSV（.csv）</option>
+        <option value="both">两者都要</option>
+      </select>
+    </div>
+
+    <button class="btn" id="exportBtn" onclick="doExport()">开始导出</button>
+
+    <div class="progress-wrap hidden" id="progressWrap">
+      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-text" id="progressText"></div>
+    </div>
+
+    <div class="result hidden" id="resultWrap">
+      <div class="file"><span class="path" id="filePath"></span></div>
+      <div class="actions">
+        <button class="btn" onclick="openFolder()">打开导出文件夹</button>
+        <button class="btn ghost" onclick="resetExport()">再导一次</button>
+      </div>
+    </div>
+    <div class="msg" id="exportMsg"></div>
+  </div>
+
+  <!-- 帮助弹窗 -->
+  <div class="modal hidden" id="helpModal">
+    <div class="box">
+      <h3>如何获取「多多号」和「登录凭证」</h3>
+      <ol>
+        <li>用浏览器（推荐 Chrome）登录拼多多：<code>https://mobile.yangkeduo.com/orders.html</code></li>
+        <li>登录成功后，按键盘 <code>F12</code> 打开开发者工具</li>
+        <li>点击顶部 <code>Application（应用）</code> 标签 → 左侧 <code>Cookies</code> → 选中 <code>mobile.yangkeduo.com</code></li>
+        <li>在右侧列表中找到 <code>pdd_user_id</code>，复制它的「值」→ 填入<b>多多号/用户ID</b></li>
+        <li>找到 <code>PDDAccessToken</code>，复制它的「值」→ 填入<b>登录凭证</b></li>
+      </ol>
+      <p style="font-size:12px;color:#8a919f;margin-top:12px;">提示：凭证相当于你的登录密码，请勿泄露给他人。</p>
+      <button class="btn ghost close" onclick="hideHelp()">我知道了</button>
+    </div>
+  </div>
+
+<script>
+  let uid = '', token = '', nickname = '';
+  let polling = null;
+
+  function showHelp(){ document.getElementById('helpModal').classList.remove('hidden'); }
+  function hideHelp(){ document.getElementById('helpModal').classList.add('hidden'); }
+
+  function setMsg(id, text, cls){
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = 'msg' + (cls ? ' '+cls : '');
+  }
+
+  async function doLogin(){
+    uid = document.getElementById('pdduid').value.trim();
+    token = document.getElementById('token').value.trim();
+    if(!uid || !token){ setMsg('loginMsg','请填写多多号和登录凭证','err'); return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span>正在验证...';
+    setMsg('loginMsg','');
+    try {
+      const r = await fetch('/api/verify', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({pdduid: uid, token})
+      });
+      const j = await r.json();
+      if(j.ok){
+        nickname = j.nickname || uid;
+        document.getElementById('nickname').textContent = '欢迎，' + nickname;
+        document.getElementById('uidText').textContent = '多多号：' + uid;
+        document.getElementById('avatar').textContent = (nickname||'多').slice(0,1);
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('exportCard').classList.remove('hidden');
+      } else {
+        setMsg('loginMsg', j.message || '登录失败', 'err');
+      }
+    } catch(e){
+      setMsg('loginMsg','请求失败：' + e.message, 'err');
+    } finally {
+      btn.disabled = false; btn.innerHTML = '登 录';
+    }
+  }
+
+  function logout(){
+    document.getElementById('exportCard').classList.add('hidden');
+    document.getElementById('loginCard').classList.remove('hidden');
+    stopPolling();
+  }
+
+  function resetExport(){
+    document.getElementById('resultWrap').classList.add('hidden');
+    document.getElementById('exportMsg').textContent = '';
+    document.getElementById('progressWrap').classList.add('hidden');
+    document.getElementById('exportBtn').disabled = false;
+  }
+
+  async function doExport(){
+    const btn = document.getElementById('exportBtn');
+    btn.disabled = true;
+    document.getElementById('resultWrap').classList.add('hidden');
+    setMsg('exportMsg','');
+    const pw = document.getElementById('progressWrap');
+    pw.classList.remove('hidden');
+    setProgress(0, '正在创建导出任务...');
+    try {
+      const r = await fetch('/api/export', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          pdduid: uid, token,
+          order_type: document.getElementById('orderType').value,
+          time_from: document.getElementById('timeFrom').value,
+          time_to: document.getElementById('timeTo').value,
+          output_format: document.getElementById('outFormat').value,
+          output_dir: 'output'
+        })
+      });
+      const j = await r.json();
+      if(!j.ok){ setMsg('exportMsg', j.message || '导出失败','err'); btn.disabled=false; pw.classList.add('hidden'); return; }
+      pollProgress(j.task_id);
+    } catch(e){
+      setMsg('exportMsg','请求失败：' + e.message, 'err');
+      btn.disabled = false; pw.classList.add('hidden');
+    }
+  }
+
+  function pollProgress(taskId){
+    stopPolling();
+    polling = setInterval(async () => {
+      try {
+        const r = await fetch('/api/progress?task_id=' + taskId);
+        const j = await r.json();
+        if(!j || j.phase === 'notfound') return;
+        if(j.phase === 'fetch'){
+          setProgress(Math.min(90, 10 + j.page*5), j.message);
+        } else if(j.phase === 'parse' || j.phase === 'write'){
+          setProgress(92, j.message);
+        } else if(j.phase === 'done'){
+          stopPolling();
+          setProgress(100, j.message);
+          onDone(j);
+        } else if(j.phase === 'error'){
+          stopPolling();
+          setMsg('exportMsg', j.message, 'err');
+          document.getElementById('progressWrap').classList.add('hidden');
+          document.getElementById('exportBtn').disabled = false;
+        }
+      } catch(e){ /* ignore */ }
+    }, 800);
+  }
+
+  function setProgress(pct, text){
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = text;
+  }
+
+  function onDone(j){
+    document.getElementById('exportMsg').textContent = '';
+    document.getElementById('progressWrap').classList.add('hidden');
+    document.getElementById('exportBtn').disabled = false;
+    const rw = document.getElementById('resultWrap');
+    rw.classList.remove('hidden');
+    const f = (j.files && j.files[0]) || '';
+    document.getElementById('filePath').textContent = f ? '已导出：' + f : '';
+    setMsg('exportMsg', '✅ ' + j.message, 'ok');
+  }
+
+  function openFolder(){
+    fetch('/api/open_folder', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({output_dir:'output'})
+    });
+  }
+
+  function stopPolling(){ if(polling){ clearInterval(polling); polling = null; } }
+</script>
+</body>
+</html>
